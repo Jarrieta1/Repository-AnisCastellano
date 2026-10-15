@@ -4,10 +4,10 @@
   "private": true,
   "type": "module",
   "description": "Catálogo de productos capilares - Anis Castellano Tienda Cosmetic",
-  "main": "server.js",
+  "main": "api/index.js",
   "scripts": {
-    "start": "node server.js",
-    "dev": "node --watch server.js"
+    "start": "node api/index.js",
+    "dev": "node --watch api/index.js"
   },
   "engines": {
     "node": ">=20"

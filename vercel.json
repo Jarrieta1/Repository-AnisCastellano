@@ -3,8 +3,11 @@
   "framework": null,
   "cleanUrls": true,
   "trailingSlash": false,
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/api" }
+  ],
   "functions": {
-    "server.js": {
+    "api/index.js": {
       "includeFiles": "{index.html,styles.css,main.js,productos_capilares.csv,img/**}"
     }
   },

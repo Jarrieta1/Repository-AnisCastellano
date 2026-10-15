@@ -27,7 +27,7 @@ npm run dev
 ├── index.html              # Página principal
 ├── styles.css              # Estilos (paleta del logo)
 ├── main.js                 # Lógica del catálogo, carrito y filtros
-├── server.js               # Servidor Express + API /api/productos
+├── api/index.js            # Servidor Express + API /api/productos
 ├── productos_capilares.csv # Fuente de productos
 ├── img/                    # Fotos de productos (opcionales)
 └── vercel.json             # Configuración de Vercel

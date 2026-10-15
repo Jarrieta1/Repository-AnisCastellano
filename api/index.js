@@ -4,7 +4,8 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const CSV_PATH = path.join(__dirname, "productos_capilares.csv");
+const ROOT = path.join(__dirname, "..");
+const CSV_PATH = path.join(ROOT, "productos_capilares.csv");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -119,7 +120,7 @@ app.get("/api/productos", (req, res) => {
 });
 
 /* ---------- Archivos estáticos (HTML, CSS, JS, imágenes, CSV) ---------- */
-app.use(express.static(__dirname));
+app.use(express.static(ROOT));
 
 /* ---------- Inicio local (Vercel exporta la app y maneja el ciclo) ---------- */
 if (!process.env.VERCEL) {
