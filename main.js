@@ -117,7 +117,19 @@ function csvAProductos(filas) {
 }
 
 async function cargarProductos() {
-  const res = await fetch("./productos_capilares.csv");
+  // 1) API de Express (producción local y Vercel)
+  try {
+    const res = await fetch("/api/productos");
+    if (res.ok) {
+      const datos = await res.json();
+      if (Array.isArray(datos) && datos.length) return datos;
+    }
+  } catch {
+    // Sin API disponible: seguimos con el CSV estático
+  }
+
+  // 2) Fallback: CSV servido como archivo estático
+  const res = await fetch("productos_capilares.csv");
   if (!res.ok) throw new Error("No se pudo leer el CSV");
   const texto = await res.text();
   return csvAProductos(parseCSV(texto));
