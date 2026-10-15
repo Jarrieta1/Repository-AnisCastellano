@@ -4,6 +4,9 @@ node_modules/
 # Vercel
 .vercel/
 
+# Fotos originales del cliente (solo fuente, no se suben)
+WhatsApp Unknown*/
+
 # Logs
 *.log
 npm-debug.log*
