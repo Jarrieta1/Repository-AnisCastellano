@@ -3,16 +3,23 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "Catálogo de productos capilares - Anis Castellano Tienda Cosmetic",
-  "main": "api/index.js",
+  "description": "Catálogo de productos capilares - Anis Castellano Tienda Cosmetic (Vue 3 + Express)",
   "scripts": {
-    "start": "node api/index.js",
-    "dev": "node --watch api/index.js"
+    "dev": "vite",
+    "dev:api": "node --watch api/index.js",
+    "build": "vite build",
+    "preview": "vite preview",
+    "start": "node api/index.js"
   },
   "engines": {
     "node": ">=20"
   },
   "dependencies": {
-    "express": "^4.21.2"
+    "express": "^4.21.2",
+    "vue": "^3.5.42"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^6.0.8",
+    "vite": "^8.3.0"
   }
 }

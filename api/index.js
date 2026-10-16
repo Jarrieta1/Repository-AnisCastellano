@@ -121,7 +121,7 @@ app.get("/api/productos", (req, res) => {
 
 /* ---------- Archivos estáticos ---------- */
 // Frontend Vue compilado (SPA)
-app.use(express.static(path.join(ROOT, "frontend-vue", "dist")));
+app.use(express.static(path.join(ROOT, "dist")));
 
 // Imágenes de productos (cache1 año)
 app.use(

@@ -8,54 +8,50 @@ Catálogo de productos capilares con **Vue 3 + Vite** y servidor **Express**.
 
 ## Correr en local
 
-La API y las imágenes se sirven en el puerto 3000; el frontend de desarrollo en el 5173 (con proxy hacia la API).
+Instala las dependencias una sola vez:
 
 ```bash
-npm install            # dependencias de la API (raíz)
-cd frontend-vue && npm install   # dependencias del frontend
+npm install
 ```
 
-Terminal 1 (API + imágenes):
+Terminal 1 (API + imágenes, puerto 3000):
 
 ```bash
-npm start              # http://localhost:3000
+npm run dev:api
 ```
 
-Terminal 2 (frontend con recarga automática):
+Terminal 2 (frontend con recarga automática, puerto 5173):
 
 ```bash
-cd frontend-vue
-npm run dev            # http://localhost:5173
+npm run dev
 ```
 
 Abre **http://localhost:5173**.
 
 ### Como producción (un solo puerto)
 
-Compila el frontend y deja que Express lo sirva:
-
 ```bash
-cd frontend-vue && npm run build
-cd .. && npm start     # http://localhost:3000 (frontend + API + imágenes)
+npm run build     # compila el frontend en dist/
+npm start         # http://localhost:3000 (frontend + API + imágenes)
 ```
 
 ## Estructura
 
 ```
-├── frontend-vue/               # Frontend Vue 3 + Vite
-│   ├── src/
-│   │   ├── components/         # Navbar, tarjetas, filtros, modal, carrito, pie
-│   │   ├── services/           # productService.js (GET /api/productos)
-│   │   ├── utils/              # formato de precio, placeholder, estrellas
-│   │   ├── assets/styles.css   # Estilos (paleta del logo)
-│   │   ├── App.vue             # Estado y vistas
-│   │   └── main.js
-│   ├── public/favicon.svg      # Logo AC de la tienda
-│   └── vite.config.js          # Proxy de /api e /img hacia :3000
-├── api/index.js                # Servidor Express + API /api/productos
-├── productos_capilares.csv     # Fuente de productos
-├── img/                        # Fotos de productos (WebP)
-└── vercel.json                 # Configuración de Vercel (build de Vite + lambda)
+├── src/                    # Frontend Vue 3
+│   ├── components/         # Navbar, tarjetas, filtros, modal, carrito, pie
+│   ├── services/           # productService.js (GET /api/productos)
+│   ├── utils/              # formato de precio, placeholder, estrellas
+│   ├── assets/styles.css   # Estilos (paleta del logo)
+│   ├── App.vue             # Estado y vistas
+│   └── main.js
+├── public/favicon.svg      # Logo AC de la tienda
+├── index.html              # Punto de entrada de Vite
+├── vite.config.js          # Proxy de /api e /img hacia :3000
+├── api/index.js            # Servidor Express + API /api/productos
+├── productos_capilares.csv # Fuente de productos
+├── img/                    # Fotos de productos (WebP)
+└── vercel.json             # Configuración de Vercel (build de Vite + lambda)
 ```
 
 ## Productos
@@ -79,9 +75,10 @@ Si falta la imagen, se genera un placeholder automático.
 
 1. Sube el repositorio a GitHub.
 2. Importa el repo en [vercel.com/new](https://vercel.com/new).
-3. Framework: **Other**; build command ya definido en `vercel.json`
-   (`cd frontend-vue && npm ci && npm run build`).
-4. Deploy. Todo el tráfico (frontend, `/api` e `/img`) pasa por la lambda de Express.
+3. Framework: **Other**; build y salida ya definidos en `vercel.json`
+   (`npm run build` → carpeta `dist/`).
+4. Deploy. El frontend se sirve desde la red de Vercel; `/api` e `/img`
+   pasan por la lambda de Express.
 
 Con el CLI:
 

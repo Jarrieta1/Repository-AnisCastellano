@@ -3,14 +3,14 @@
   "framework": null,
   "cleanUrls": true,
   "trailingSlash": false,
-  "buildCommand": "cd frontend-vue && npm ci && npm run build",
-  "outputDirectory": "frontend-vue/dist",
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
   "rewrites": [
     { "source": "/(.*)", "destination": "/api" }
   ],
   "functions": {
     "api/index.js": {
-      "includeFiles": "{frontend-vue/dist/**,productos_capilares.csv,img/**}"
+      "includeFiles": "{dist/**,productos_capilares.csv,img/**}"
     }
   },
   "headers": [
