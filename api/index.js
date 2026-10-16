@@ -120,7 +120,15 @@ app.get("/api/productos", (req, res) => {
 });
 
 /* ---------- Archivos estáticos (HTML, CSS, JS, imágenes, CSV) ---------- */
-app.use(express.static(ROOT));
+app.use(
+  express.static(ROOT, {
+    setHeaders: (res, filePath) => {
+      if (filePath.endsWith(".webp")) {
+        res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+      }
+    },
+  }),
+);
 
 /* ---------- Inicio local (Vercel exporta la app y maneja el ciclo) ---------- */
 if (!process.env.VERCEL) {
