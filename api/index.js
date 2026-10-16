@@ -119,9 +119,14 @@ app.get("/api/productos", (req, res) => {
   }
 });
 
-/* ---------- Archivos estáticos (HTML, CSS, JS, imágenes, CSV) ---------- */
+/* ---------- Archivos estáticos ---------- */
+// Frontend Vue compilado (SPA)
+app.use(express.static(path.join(ROOT, "frontend-vue", "dist")));
+
+// Imágenes de productos (cache1 año)
 app.use(
-  express.static(ROOT, {
+  "/img",
+  express.static(path.join(ROOT, "img"), {
     setHeaders: (res, filePath) => {
       if (filePath.endsWith(".webp")) {
         res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
@@ -129,6 +134,12 @@ app.use(
     },
   }),
 );
+
+// CSV a la vista (misma cabecera que en vercel.json)
+app.get("/productos_capilares.csv", (req, res) => {
+  res.set("Cache-Control", "public, max-age=300, stale-while-revalidate=600");
+  res.sendFile(CSV_PATH);
+});
 
 /* ---------- Inicio local (Vercel exporta la app y maneja el ciclo) ---------- */
 if (!process.env.VERCEL) {

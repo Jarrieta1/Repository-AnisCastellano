@@ -3,12 +3,13 @@
   "framework": null,
   "cleanUrls": true,
   "trailingSlash": false,
+  "buildCommand": "cd frontend-vue && npm ci && npm run build",
   "rewrites": [
     { "source": "/(.*)", "destination": "/api" }
   ],
   "functions": {
     "api/index.js": {
-      "includeFiles": "{index.html,styles.css,main.js,productos_capilares.csv,img/**}"
+      "includeFiles": "{frontend-vue/dist/**,productos_capilares.csv,img/**}"
     }
   },
   "headers": [
