@@ -1,138 +1,20 @@
 /* =========================================================
    Anis Castellano Tienda Cosmetic
-   Los productos se cargan desde productos_capilares.csv
-   Columnas requeridas: Título, Descripción, Precio
-   Opcional: agrega una columna "Imagen" con el nombre de
-   archivo (ej: img/mi-producto.webp) para usar tus fotos.
-   Si falta la imagen, se genera un placeholder automático.
+   El catálogo se carga desde la API /api/productos
+   (Express lee y parsea productos_capilares.csv en el
+   servidor; el navegador nunca lee el CSV directamente).
+   Las fotos viven en img/ con slug del producto.
    ========================================================= */
 
 let PRODUCTS = [];
 
-/* ---------- Carga desde CSV ---------- */
-function parseCSV(texto) {
-  texto = texto.replace(/^\uFEFF/, "");
-  const filas = [];
-  let fila = [];
-  let campo = "";
-  let entreComillas = false;
-
-  for (let i = 0; i < texto.length; i++) {
-    const c = texto[i];
-    if (entreComillas) {
-      if (c === '"') {
-        if (texto[i + 1] === '"') {
-          campo += '"';
-          i++;
-        } else {
-          entreComillas = false;
-        }
-      } else {
-        campo += c;
-      }
-    } else if (c === '"') {
-      entreComillas = true;
-    } else if (c === ",") {
-      fila.push(campo);
-      campo = "";
-    } else if (c === "\n" || c === "\r") {
-      if (c === "\r" && texto[i + 1] === "\n") i++;
-      fila.push(campo);
-      campo = "";
-      if (fila.some((f) => f.trim() !== "")) filas.push(fila);
-      fila = [];
-    } else {
-      campo += c;
-    }
-  }
-  if (campo !== "" || fila.length) {
-    fila.push(campo);
-    if (fila.some((f) => f.trim() !== "")) filas.push(fila);
-  }
-  return filas;
-}
-
-const normalizar = (s) =>
-  s
-    .trim()
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "");
-
-const slugify = (s) =>
-  normalizar(s)
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
-
-function parsePrecio(s) {
-  return Number(String(s).replace(/[^0-9]/g, "")) || 0;
-}
-
-function csvAProductos(filas) {
-  if (filas.length < 2) return [];
-  const headers = filas[0].map(normalizar);
-  const iTitulo = headers.findIndex(
-    (h) => h.startsWith("titulo") || h === "nombre",
-  );
-  const iDesc = headers.findIndex((h) => h.startsWith("descripcion"));
-  const iPrecio = headers.findIndex((h) => h.startsWith("precio"));
-  const iImagen = headers.findIndex((h) => h.startsWith("imagen"));
-  const iCategoria = headers.findIndex((h) => h.startsWith("categoria"));
-
-  if (iTitulo < 0 || iPrecio < 0) {
-    console.error("El CSV debe tener columnas 'Título' y 'Precio'.");
-    return [];
-  }
-
-  return filas
-    .slice(1)
-    .map((fila, i) => {
-      const nombre = (fila[iTitulo] || "").trim();
-      const slug = slugify(nombre);
-      const imagenCol = iImagen >= 0 ? (fila[iImagen] || "").trim() : "";
-      return {
-        id: i + 1,
-        nombre,
-        categoria:
-          iCategoria >= 0 && fila[iCategoria]
-            ? fila[iCategoria].trim()
-            : "Cabello",
-        precio: parsePrecio(fila[iPrecio]),
-        precioAntes: null,
-        imagen: imagenCol
-          ? imagenCol.startsWith("img/")
-            ? imagenCol
-            : `img/${imagenCol}`
-          : `img/${slug}.webp`,
-        destacado: false,
-        nuevo: false,
-        descuento: 0,
-        rating: null,
-        resenas: null,
-        descripcion: iDesc >= 0 ? (fila[iDesc] || "").trim() : "",
-        especificaciones: null,
-      };
-    })
-    .filter((p) => p.nombre && p.precio > 0);
-}
-
 async function cargarProductos() {
-  // 1) API de Express (producción local y Vercel)
-  try {
-    const res = await fetch("/api/productos");
-    if (res.ok) {
-      const datos = await res.json();
-      if (Array.isArray(datos) && datos.length) return datos;
-    }
-  } catch {
-    // Sin API disponible: seguimos con el CSV estático
-  }
-
-  // 2) Fallback: CSV servido como archivo estático
-  const res = await fetch("productos_capilares.csv");
-  if (!res.ok) throw new Error("No se pudo leer el CSV");
-  const texto = await res.text();
-  return csvAProductos(parseCSV(texto));
+  const res = await fetch("/api/productos");
+  if (!res.ok) throw new Error(`API /api/productos respondió ${res.status}`);
+  const datos = await res.json();
+  if (!Array.isArray(datos) || !datos.length)
+    throw new Error("La API devolvió un catálogo vacío");
+  return datos;
 }
 
 /* ---------- Estado ---------- */
@@ -184,6 +66,60 @@ function placeholderSVG(producto) {
 
 function imgSrc(producto) {
   return producto.imagen || placeholderSVG(producto);
+}
+
+/* ---------- Lupa (zoom de imágenes) ---------- */
+const LUPA_D = 140; // diámetro en px
+const LUPA_ZOOM = 2.4;
+
+function montarLupa(wrap) {
+  if (!wrap || wrap.dataset.lupa) return;
+  if (!window.matchMedia("(hover: hover) and (pointer: fine)").matches) return;
+  const img = wrap.querySelector("img");
+  if (!img) return;
+  wrap.dataset.lupa = "1";
+
+  const lupa = document.createElement("span");
+  lupa.className = "lupa";
+  lupa.setAttribute("aria-hidden", "true");
+  lupa.style.width = lupa.style.height = `${LUPA_D}px`;
+  wrap.appendChild(lupa);
+
+  wrap.addEventListener("mousemove", (e) => {
+    const box = wrap.getBoundingClientRect();
+    const x = e.clientX - box.left;
+    const y = e.clientY - box.top;
+    if (x < 0 || y < 0 || x > box.width || y > box.height) {
+      wrap.classList.remove("is-lupa");
+      return;
+    }
+    if (!img.complete || !img.naturalWidth) return;
+
+    // La lupa se muestra sin escala en la imagen (evita el zoom de hover)
+    wrap.classList.add("is-lupa");
+
+    const half = LUPA_D / 2;
+    const cx = Math.min(Math.max(x, half), box.width - half);
+    const cy = Math.min(Math.max(y, half), box.height - half);
+    lupa.style.left = `${cx - half}px`;
+    lupa.style.top = `${cy - half}px`;
+
+    // Réplica del object-fit: cover dentro de la lupa
+    const escala = Math.max(
+      box.width / img.naturalWidth,
+      box.height / img.naturalHeight,
+    );
+    const dw = img.naturalWidth * escala;
+    const dh = img.naturalHeight * escala;
+    const ox = (box.width - dw) / 2;
+    const oy = (box.height - dh) / 2;
+    lupa.style.backgroundImage = `url("${img.currentSrc || img.src}")`;
+    lupa.style.backgroundSize = `${dw * LUPA_ZOOM}px ${dh * LUPA_ZOOM}px`;
+    lupa.style.backgroundPosition =
+      `${half - (cx - ox) * LUPA_ZOOM}px ${half - (cy - oy) * LUPA_ZOOM}px`;
+  });
+
+  wrap.addEventListener("mouseleave", () => wrap.classList.remove("is-lupa"));
 }
 
 function stars(rating) {
@@ -453,7 +389,7 @@ function finalizarPedido() {
     `*Total: ${formatPrecio(total)}*\n\n` +
     `Gracias.`;
   window.open(
-    `https://wa.me/573225249473?text=${encodeURIComponent(texto)}`,
+    `https://wa.me/573004310874?text=${encodeURIComponent(texto)}`,
     "_blank",
   );
 }
@@ -510,6 +446,7 @@ function bindEvents() {
   });
 
   // Modal
+  montarLupa($(".modal__media"));
   $$("[data-close]").forEach((el) => el.addEventListener("click", cerrarModal));
   document.addEventListener("keydown", (e) => {
     if (e.key === "Escape") {
@@ -612,7 +549,7 @@ async function init() {
     empty.hidden = false;
     empty.querySelector("h3").textContent = "No se pudo cargar el catálogo";
     empty.querySelector("p").textContent =
-      "Revisa que el archivo productos_capilares.csv esté en la misma carpeta.";
+      "No pudimos consultar la API del catálogo. Intenta de nuevo en unos segundos.";
     return;
   }
 
