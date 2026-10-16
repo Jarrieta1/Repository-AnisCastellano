@@ -6,6 +6,8 @@ node_modules/
 
 # Fotos originales del cliente (solo fuente, no se suben)
 WhatsApp Unknown*/
+WhatsAppImages*/
+WhatsAppImages.zip
 
 # Logs
 *.log
