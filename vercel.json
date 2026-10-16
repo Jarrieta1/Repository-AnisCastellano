@@ -4,6 +4,7 @@
   "cleanUrls": true,
   "trailingSlash": false,
   "buildCommand": "cd frontend-vue && npm ci && npm run build",
+  "outputDirectory": "frontend-vue/dist",
   "rewrites": [
     { "source": "/(.*)", "destination": "/api" }
   ],
