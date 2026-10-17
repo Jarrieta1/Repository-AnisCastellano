@@ -32,7 +32,8 @@ function onImgError(e) {
       <button
         class="wish"
         :class="{ 'is-on': esFavorito }"
-        aria-label="Favorito"
+        :aria-label="esFavorito ? `Quitar ${producto.nombre} de favoritos` : `Agregar ${producto.nombre} a favoritos`"
+        :aria-pressed="esFavorito"
         @click="emit('toggle-fav', producto.id)"
       >
         <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
@@ -50,7 +51,7 @@ function onImgError(e) {
       <span class="card__cat">{{ producto.categoria }}</span>
       <h3 class="card__title">{{ producto.nombre }}</h3>
       <div v-if="producto.rating" class="card__rating">
-        <span class="stars">{{ stars(producto.rating) }}</span>
+        <span class="stars" aria-hidden="true">{{ stars(producto.rating) }}</span>
         <span>{{ producto.rating }} ({{ producto.resenas }})</span>
       </div>
       <div class="card__price">

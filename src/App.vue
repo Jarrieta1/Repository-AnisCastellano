@@ -22,6 +22,8 @@ const productoModal = ref(null)
 const modalQty = ref(1)
 const carritoAbierto = ref(false)
 const toastMsg = ref('')
+const toastAccionTexto = ref('')
+let toastAccionFn = null
 let toastTimer = null
 
 /* ---------- Persistencia (mismas claves que el frontend anterior) ---------- */
@@ -77,7 +79,7 @@ const productosFiltrados = computed(() => {
 })
 
 const resultadosTexto = computed(() => {
-  if (cargando.value) return 'Cargando productos...'
+  if (cargando.value) return 'Cargando productos…'
   if (error.value) return ''
   const n = productosFiltrados.value.length
   return n === 0 ? 'Sin resultados' : `${n} producto${n > 1 ? 's' : ''}`
@@ -115,6 +117,7 @@ async function init() {
   try {
     productos.value = await cargarProductos()
     error.value = ''
+    leerFiltrosDeURL()
   } catch (err) {
     console.error(err)
     error.value = err.message
@@ -129,6 +132,27 @@ function resetFiltros() {
   busqueda.value = ''
   orden.value = 'default'
 }
+
+/* ---------- Sync filtros ↔ URL ---------- */
+function leerFiltrosDeURL() {
+  const params = new URLSearchParams(window.location.search)
+  const cat = params.get('cat')
+  const q = params.get('q')
+  const ord = params.get('orden')
+  if (cat && categorias.value.includes(cat)) categoria.value = cat
+  if (q) busqueda.value = q
+  if (ord && ['default', 'price-asc', 'price-desc', 'name-asc'].includes(ord))
+    orden.value = ord
+}
+
+watch([categoria, busqueda, orden], () => {
+  const params = new URLSearchParams()
+  if (categoria.value !== 'Todos') params.set('cat', categoria.value)
+  if (busqueda.value.trim()) params.set('q', busqueda.value.trim())
+  if (orden.value !== 'default') params.set('orden', orden.value)
+  const qs = params.toString()
+  history.replaceState(null, '', qs ? `?${qs}${location.hash}` : `${location.pathname}${location.hash}`)
+})
 
 function seleccionarCategoria(cat) {
   categoria.value = cat
@@ -187,12 +211,25 @@ function cambiarCantidad(id, delta) {
 }
 
 function eliminarDelCarrito(id) {
-  carrito.value = carrito.value.filter((i) => i.id !== id)
+  const idx = carrito.value.findIndex((i) => i.id === id)
+  if (idx < 0) return
+  const [item] = carrito.value.splice(idx, 1)
+  const p = productos.value.find((x) => x.id === item.id)
+  toast(`${p?.nombre ?? 'Producto'} retirado del carrito`, {
+    texto: 'Deshacer',
+    fn: () => carrito.value.splice(idx, 0, item),
+  })
 }
 
 function irAlCatalogo() {
   carritoAbierto.value = false
-  document.getElementById('catalogo')?.scrollIntoView({ behavior: 'smooth' })
+  scrollSuave(document.getElementById('catalogo'))
+}
+
+function scrollSuave(el) {
+  if (!el) return
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  el.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth' })
 }
 
 function finalizarPedido() {
@@ -213,12 +250,24 @@ function finalizarPedido() {
 }
 
 /* ---------- Toast ---------- */
-function toast(msg) {
+function toast(msg, accion = null) {
   toastMsg.value = msg
+  toastAccionTexto.value = accion?.texto ?? ''
+  toastAccionFn = accion?.fn ?? null
   clearTimeout(toastTimer)
   toastTimer = setTimeout(() => {
     toastMsg.value = ''
-  }, 2600)
+    toastAccionTexto.value = ''
+    toastAccionFn = null
+  }, accion ? 5000 : 2600)
+}
+
+function ejecutarToastAccion() {
+  toastAccionFn?.()
+  toastMsg.value = ''
+  toastAccionTexto.value = ''
+  toastAccionFn = null
+  clearTimeout(toastTimer)
 }
 
 /* ---------- Tecla Escape: cierra modal y carrito ---------- */
@@ -246,6 +295,7 @@ onUnmounted(() => {
 </script>
 
 <template>
+  <a class="skip-link" href="#catalogo">Saltar al catálogo</a>
   <div id="inicio"></div>
   <Navbar :cart-count="carritoCount" @open-cart="carritoAbierto = true" />
 
@@ -347,7 +397,7 @@ onUnmounted(() => {
         @select-categoria="seleccionarCategoria"
       />
 
-      <p class="results">{{ resultadosTexto }}</p>
+      <p class="results" aria-live="polite">{{ resultadosTexto }}</p>
 
       <ProductList
         :productos="productosFiltrados"
@@ -358,10 +408,18 @@ onUnmounted(() => {
       />
 
       <div class="empty" :hidden="!mostrarVacio">
-        <span>💄</span>
+        <span class="empty__icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="44" height="44" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/>
+            <path d="M3 6h18"/>
+            <path d="M16 10a4 4 0 0 1-8 0"/>
+          </svg>
+        </span>
         <h3>{{ error ? 'No se pudo cargar el catálogo' : 'No encontramos productos' }}</h3>
         <p>{{ error ? 'No pudimos consultar la API del catálogo. Intenta de nuevo en unos segundos.' : 'Prueba con otra búsqueda o categoría.' }}</p>
-        <button class="btn btn--primary" @click="resetFiltros">Ver todos</button>
+        <button class="btn btn--primary" @click="error ? init() : resetFiltros()">
+          {{ error ? 'Reintentar' : 'Ver todos' }}
+        </button>
       </div>
     </section>
 
@@ -424,6 +482,7 @@ onUnmounted(() => {
   />
 
   <div class="toast" :class="{ 'is-visible': toastMsg }" role="status" aria-live="polite">
-    {{ toastMsg }}
+    <span>{{ toastMsg }}</span>
+    <button v-if="toastAccionTexto" class="toast__action" @click="ejecutarToastAccion">{{ toastAccionTexto }}</button>
   </div>
 </template>

@@ -1,6 +1,11 @@
 # Dependencies
 node_modules/
 
+# Skills de agentes (locales)
+.agents/
+.claude/
+skills-lock.json
+/agent
 # Build
 dist/
 dist-ssr/

@@ -1,8 +1,9 @@
 <script setup>
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { formatPrecio } from '../utils/formatPrice'
 import { stars } from '../utils/stars'
 import { imgSrc, placeholderSVG } from '../utils/placeholderImage'
+import { useFocusTrap } from '../composables/useFocusTrap'
 
 const props = defineProps({
   producto: { type: Object, default: null },
@@ -12,6 +13,9 @@ const emit = defineEmits(['close', 'inc-qty', 'dec-qty', 'add'])
 
 const mediaRef = ref(null)
 const lupaRef = ref(null)
+const dialogRef = ref(null)
+
+useFocusTrap(dialogRef, computed(() => !!props.producto))
 
 function onImgError(e) {
   if (!props.producto) return
@@ -72,7 +76,14 @@ onMounted(() => {
 <template>
   <div class="modal" :hidden="!producto">
     <div class="modal__backdrop" @click="emit('close')"></div>
-    <div class="modal__dialog" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div
+      ref="dialogRef"
+      class="modal__dialog"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="modalTitle"
+      tabindex="-1"
+    >
       <button class="modal__close" aria-label="Cerrar" @click="emit('close')">✕</button>
       <div class="modal__media" ref="mediaRef">
         <img :src="producto ? imgSrc(producto) : ''" :alt="producto ? producto.nombre : ''" @error="onImgError" />
@@ -82,7 +93,7 @@ onMounted(() => {
         <span class="tag">{{ producto?.categoria }}</span>
         <h3 id="modalTitle">{{ producto?.nombre }}</h3>
         <div v-if="producto?.rating" class="rating">
-          <span class="stars">{{ stars(producto.rating) }}</span>
+          <span class="stars" aria-hidden="true">{{ stars(producto.rating) }}</span>
           {{ producto.rating }} · {{ producto.resenas }} reseñas
         </div>
         <p>{{ producto?.descripcion }}</p>
@@ -96,9 +107,9 @@ onMounted(() => {
           <span class="price-old">{{ producto?.precioAntes ? formatPrecio(producto.precioAntes) : '' }}</span>
         </div>
         <div class="qty">
-          <button aria-label="Restar" @click="emit('dec-qty')">−</button>
-          <input type="number" :value="qty" min="1" max="20" readonly />
-          <button aria-label="Sumar" @click="emit('inc-qty')">+</button>
+          <button aria-label="Restar cantidad" @click="emit('dec-qty')">−</button>
+          <input type="number" :value="qty" min="1" max="20" readonly aria-label="Cantidad" />
+          <button aria-label="Sumar cantidad" @click="emit('inc-qty')">+</button>
         </div>
         <button class="btn btn--primary btn--block" @click="emit('add')">Agregar al carrito</button>
       </div>
